@@ -41,6 +41,7 @@ func (l *limit[TKey]) tick(ticker *time.Ticker, limiter *Limiter[TKey], key TKey
 }
 
 func (l *limit[TKey]) call(maxBurst int32, period int64) (bool, time.Time) {
+	// Add and subtract can be overhead, but it ensures absence of gaps between check and addition without swap loops
 	incAmount := l.amount.Add(1)
 	if incAmount > maxBurst {
 		l.amount.Add(-1)

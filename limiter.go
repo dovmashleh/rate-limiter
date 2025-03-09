@@ -39,7 +39,13 @@ func (l *Limiter[TKey]) Try(ctx context.Context, key TKey) (can bool, waitUntil 
 	if !ok {
 		lim = newLimit(ctx, l, key)
 		l.mu.Lock()
-		l.limits[key] = lim
+		// have to check one more time since we have new critical section here.
+		// crating separate critical section to avoid excessive write locks
+		if checkLim, ok := l.limits[key]; ok {
+			lim = checkLim
+		} else {
+			l.limits[key] = lim
+		}
 		l.mu.Unlock()
 	}
 	return lim.call(l.maxBurst, l.period)
