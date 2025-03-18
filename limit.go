@@ -15,7 +15,7 @@ func newLimit[TKey comparable](ctx context.Context, limiter *Limiter[TKey], key 
 	l := &limit[TKey]{}
 	ticker := time.NewTicker(time.Duration(limiter.period) * time.Millisecond)
 	l.next.Store(time.Now().UnixMilli())
-	l.run(ctx, ticker, limiter, key)
+	go l.run(ctx, ticker, limiter, key)
 	return l
 }
 
