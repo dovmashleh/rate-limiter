@@ -12,9 +12,10 @@ type Limiter[TKey comparable] struct {
 	limits   map[TKey]*limit[TKey]
 	maxBurst int32
 	period   int64
+	ctx      context.Context
 }
 
-func New[TKey comparable](maxBurst int, periodMillis int) *Limiter[TKey] {
+func New[TKey comparable](ctx context.Context, maxBurst int, periodMillis int) *Limiter[TKey] {
 	if maxBurst < 1 {
 		maxBurst = 1
 	}
@@ -29,15 +30,16 @@ func New[TKey comparable](maxBurst int, periodMillis int) *Limiter[TKey] {
 		limits:   make(map[TKey]*limit[TKey]),
 		maxBurst: int32(maxBurst),
 		period:   int64(periodMillis),
+		ctx:      ctx,
 	}
 }
 
-func (l *Limiter[TKey]) Try(ctx context.Context, key TKey) (can bool, waitUntil time.Time) {
+func (l *Limiter[TKey]) Try(key TKey) (can bool, waitUntil time.Time) {
 	l.mu.RLock()
 	lim, ok := l.limits[key]
 	l.mu.RUnlock()
 	if !ok {
-		lim = newLimit(ctx, l, key)
+		lim = newLimit(l.ctx, l, key)
 		l.mu.Lock()
 		// have to check one more time since we have new critical section here.
 		// crating separate critical section to avoid excessive write locks
